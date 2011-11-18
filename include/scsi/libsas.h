@@ -86,7 +86,9 @@ enum discover_event {
 	DISCE_DISCOVER_DOMAIN   = 0U,
 	DISCE_REVALIDATE_DOMAIN = 1,
 	DISCE_PORT_GONE         = 2,
-	DISC_NUM_EVENTS 	= 3,
+	DISCE_PROBE		= 3,
+	DISCE_DESTRUCT		= 4,
+	DISC_NUM_EVENTS		= 5,
 };
 
 /* ---------- Expander Devices ---------- */
@@ -188,6 +190,7 @@ struct domain_device {
         struct asd_sas_port *port;        /* shortcut to root of the tree */
 
         struct list_head dev_list_node;
+	struct list_head disco_list_node;
 
         enum sas_protocol    iproto;
         enum sas_protocol    tproto;
@@ -223,7 +226,6 @@ struct sas_discovery {
 	int    max_level;
 };
 
-
 /* The port struct is Class:RW, driver:RO */
 struct asd_sas_port {
 /* private: */
@@ -233,6 +235,8 @@ struct asd_sas_port {
 	struct domain_device *port_dev;
 	spinlock_t dev_list_lock;
 	struct list_head dev_list;
+	struct list_head disco_list;
+	struct list_head destroy_list;
 	enum   sas_linkrate linkrate;
 
 	struct sas_phy *phy;
@@ -331,6 +335,7 @@ struct sas_ha_event {
 enum sas_ha_state {
 	SAS_HA_REGISTERED,
 	SAS_HA_DRAINING,
+	SAS_HA_ATA_EH_ACTIVE,
 };
 
 struct sas_ha_struct {
@@ -342,6 +347,8 @@ struct sas_ha_struct {
 	struct mutex	  drain_mutex;
 	unsigned long	  state;
 	spinlock_t 	  state_lock;
+
+	struct mutex disco_mutex;
 
 	struct scsi_core core;
 
