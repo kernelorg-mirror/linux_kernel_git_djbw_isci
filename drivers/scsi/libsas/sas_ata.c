@@ -663,6 +663,11 @@ static void async_sas_ata_eh(void *data, async_cookie_t cookie)
 
 	ata_port_printk(ap, KERN_DEBUG, "sas eh calling libata port error handler");
 	ata_scsi_port_error_handler(ha->core.shost, ap);
+
+	/* tell scsi_block_when_processing_errors() waiters that we are
+	 * still making forward progress
+	 */
+	wake_up(&ha->core.shost->host_wait);
 }
 
 void sas_ata_strategy_handler(struct Scsi_Host *shost)
