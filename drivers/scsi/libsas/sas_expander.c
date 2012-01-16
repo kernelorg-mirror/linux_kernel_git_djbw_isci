@@ -176,9 +176,10 @@ static void sas_set_ex_phy(struct domain_device *dev, int phy_id,
 	struct smp_resp *resp = disc_resp;
 	struct discover_resp *dr = &resp->disc;
 	struct sas_rphy *rphy = dev->rphy;
-	int rediscover = (phy->phy != NULL);
+	bool new_phy = !phy->phy;
+	char *type;
 
-	if (!rediscover) {
+	if (new_phy) {
 		phy->phy = sas_phy_alloc(&rphy->dev, phy_id);
 
 		/* FIXME: error_handling */
@@ -223,20 +224,43 @@ static void sas_set_ex_phy(struct domain_device *dev, int phy_id,
 	phy->phy->maximum_linkrate = dr->pmax_linkrate;
 	phy->phy->negotiated_linkrate = phy->linkrate;
 
-	if (!rediscover)
+	if (new_phy)
 		if (sas_phy_add(phy->phy)) {
 			sas_phy_free(phy->phy);
 			return;
 		}
 
-	SAS_DPRINTK("ex %016llx phy%02d:%c attached: %016llx\n",
+	switch (phy->attached_dev_type) {
+	case NO_DEVICE:
+		type = "no device";
+		break;
+	case SAS_END_DEV:
+		if (phy->attached_iproto) {
+			if (phy->attached_tproto)
+				type = "host+target";
+			else
+				type = "host";
+		} else {
+			if (dr->attached_sata_dev)
+				type = "stp";
+			else
+				type = "ssp";
+		}
+		break;
+	case EDGE_DEV:
+	case FANOUT_DEV:
+		type = "smp";
+		break;
+	default:
+		type = "unknown";
+	}
+
+	SAS_DPRINTK("ex %016llx phy%02d:%c:%X attached: %016llx (%s)\n",
 		    SAS_ADDR(dev->sas_addr), phy->phy_id,
 		    phy->routing_attr == TABLE_ROUTING ? 'T' :
 		    phy->routing_attr == DIRECT_ROUTING ? 'D' :
 		    phy->routing_attr == SUBTRACTIVE_ROUTING ? 'S' : '?',
-		    SAS_ADDR(phy->attached_sas_addr));
-
-	return;
+		    phy->linkrate, SAS_ADDR(phy->attached_sas_addr), type);
 }
 
 /* check if we have an existing attached ata device on this expander phy */
