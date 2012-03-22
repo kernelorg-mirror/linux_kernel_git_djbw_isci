@@ -393,6 +393,10 @@ static inline int scsi_autopm_get_device(struct scsi_device *d) { return 0; }
 static inline void scsi_autopm_put_device(struct scsi_device *d) {}
 #endif /* CONFIG_PM_RUNTIME */
 
+#if IS_ENABLED(CONFIG_PM) || IS_ENABLED(CONFIG_BLK_DEV_SD)
+extern struct list_head scsi_sd_probe_domain;
+#endif
+
 static inline int __must_check scsi_device_reprobe(struct scsi_device *sdev)
 {
 	return device_reprobe(&sdev->sdev_gendev);
