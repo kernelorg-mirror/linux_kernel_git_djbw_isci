@@ -497,10 +497,12 @@ static void  __devinit mvs_post_sas_ha_init(struct Scsi_Host *shost,
 	for (j = 0; j < nr_core; j++) {
 		mvi = ((struct mvs_prv_info *)sha->lldd_ha)->mvi[j];
 		for (i = 0; i < chip_info->n_phy; i++) {
-			sha->sas_phy[j * chip_info->n_phy  + i] =
-				&mvi->phy[i].sas_phy;
-			sha->sas_port[j * chip_info->n_phy + i] =
-				&mvi->port[i].sas_port;
+			struct asd_sas_phy *phy = &mvi->phy[i].sas_phy;
+			int id = j * chip_info->n_phy  + i;
+
+			phy->id = id;
+			sha->sas_phy[id] = phy;
+			sha->sas_port[id] = &mvi->port[i].sas_port;
 		}
 	}
 
